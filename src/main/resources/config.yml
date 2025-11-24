@@ -1,0 +1,20 @@
+challenge:
+  enabled: true
+  period: weekly      # (we'll hook this later; for now it's just config)
+  run-day: MONDAY     # day-of-week for auto run
+  run-hour: 0         # 0–23, server time
+
+  broadcast-msg: true # send broadcast when a new rich man is chosen
+  broadcast-on-join: true # broadcast the current rich man to new players
+
+  reward-commands:
+    - "lp user {player} parent addtemp richman 7d"
+
+messages:
+  prefix: "&8[&6RichMan&8] &7"
+  no-winner: "No Rich Man has been crowned yet."
+  last-winner: "Last Rich Man: &e{player} &7with &a${amount}&7."
+  running: "Selecting this week's Rich Man..."
+  winner-line: "&aRich Man winner: &6{player} &7with &a${amount}&7."
+  no-permission: "&cYou don't have permission to do that."
+  broadcast: "&6[RichMan] &e{player} &7is this week's &eRich Man &7with &a${amount}&7!"
