@@ -1,6 +1,9 @@
 package com.outbacksmp.richman;
 
+import com.outbacksmp.richman.api.APIImpl;
+import com.outbacksmp.richman.api.RichManAPI;
 import org.bukkit.ChatColor;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class RichManPlugin extends JavaPlugin {
@@ -10,6 +13,8 @@ public final class RichManPlugin extends JavaPlugin {
     private EconomyService economyService;
     private ChallengeManager challengeManager;
     private BaltopChallenge baltopChallenge;
+
+    private RichManAPI richManAPI;
 
     @Override
     public void onEnable() {
@@ -29,6 +34,10 @@ public final class RichManPlugin extends JavaPlugin {
 
         this.challengeManager = new ChallengeManager(this, coreChallenge, dataStore, configManager, baltopChallenge);
 
+        // API Implementation
+        this.richManAPI = new APIImpl(dataStore, economyService, configManager);
+        getServer().getServicesManager().register(RichManAPI.class, richManAPI, this, ServicePriority.Normal);
+
         challengeManager.startScheduler();
 
 
@@ -47,6 +56,8 @@ public final class RichManPlugin extends JavaPlugin {
     public void onDisable() {
         if(dataStore != null) dataStore.save();
         getLogger().info("RichMan Successfully Disabled and Data Saved.");
+
+        getServer().getServicesManager().unregisterAll(this);
     }
 
     private void startRichManReminderTask(RichManCommand richManCommand) {
@@ -66,6 +77,10 @@ public final class RichManPlugin extends JavaPlugin {
             getServer().getOnlinePlayers().forEach(p -> p.sendMessage(message));
 
         }, 20L * 60L * 2L, 20L * 60L * periodTicks);
+    }
+
+    public RichManAPI getRichManAPI() {
+        return richManAPI;
     }
 
 }
