@@ -1,10 +1,6 @@
 package com.outbacksmp.richman;
 
-import java.time.DayOfWeek;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -33,13 +29,6 @@ public class RichManCommand implements CommandExecutor, TabCompleter {
                     .withLocale(Locale.ENGLISH)
                     .withZone(ZoneId.systemDefault());
 
-    private DayOfWeek runDay;
-    private int runHour;
-
-    private ZonedDateTime now ;
-    private ZonedDateTime nextRun;
-
-
 
     public RichManCommand(RichManPlugin plugin,
                           ConfigManager config,
@@ -53,16 +42,6 @@ public class RichManCommand implements CommandExecutor, TabCompleter {
         this.challengeManager = challengeManager;
         this.baltop = baltop;
         this.economy = economy;
-
-        this.runDay = config.getRunDay();
-        this.runHour = config.getRunHour();
-
-        this.now = ZonedDateTime.now();
-        this.nextRun = now.with(TemporalAdjusters.nextOrSame(runDay))
-                .withHour(runHour)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0);
     }
 
     @Override
@@ -73,6 +52,24 @@ public class RichManCommand implements CommandExecutor, TabCompleter {
 
         if (args.length >= 1) {
             String sub = args[0].toLowerCase(Locale.ROOT);
+
+            // /richman reload
+            if (sub.equals("reload")) {
+                if (!sender.hasPermission("richman.admin")) {
+                    sender.sendMessage(config.msg("no-permission"));
+                    return true;
+                }
+
+                // Reload the config from disk
+                plugin.reloadConfig();
+                // (optional but nice, if you want a wrapper)
+                // config.reload();
+
+                sender.sendMessage(config.msgRaw("reloaded"));
+                // add messages.reloaded: "&aRichMan configuration reloaded." in config.yml
+
+                return true;
+            }
 
             // /richman forcerun
             if (sub.equals("forcerun")) {
@@ -102,6 +99,7 @@ public class RichManCommand implements CommandExecutor, TabCompleter {
         sendMainScreen(sender);
         return true;
     }
+
 
     private void sendMainScreen(CommandSender sender) {
         // Optional header line
@@ -143,8 +141,20 @@ public class RichManCommand implements CommandExecutor, TabCompleter {
     }
 
     public String getNextRun() {
+        DayOfWeek runDay = config.getRunDay();
+        LocalTime runTime = config.getRunTime();
+        ZoneId zone = config.getScheduleZone(); // or ZoneId.systemDefault()
 
-        // If we've already passed this week's run time, next is next week
+        ZonedDateTime now = ZonedDateTime.now(zone);
+
+        ZonedDateTime nextRun = now
+                .with(TemporalAdjusters.nextOrSame(runDay))
+                .withHour(runTime.getHour())
+                .withMinute(runTime.getMinute())
+                .withSecond(0)
+                .withNano(0);
+
+        // If we've already passed this week's run, push to next week
         if (!now.isBefore(nextRun)) {
             nextRun = nextRun.plusWeeks(1);
         }
@@ -160,24 +170,40 @@ public class RichManCommand implements CommandExecutor, TabCompleter {
         if (hours > 0) sb.append(hours).append("h ");
         if (minutes > 0 || sb.length() == 0) sb.append(minutes).append("m");
 
-        return sb.toString();
+        return sb.toString().trim();
     }
 
     private String buildNextRunLine() {
         try {
+            DayOfWeek runDay = config.getRunDay();
+            LocalTime runTime = config.getRunTime();
+            ZoneId zone = config.getScheduleZone();
+
+            ZonedDateTime now = ZonedDateTime.now(zone);
+            ZonedDateTime nextRun = now
+                    .with(TemporalAdjusters.nextOrSame(runDay))
+                    .withHour(runTime.getHour())
+                    .withMinute(runTime.getMinute())
+                    .withSecond(0)
+                    .withNano(0);
+
+            if (!now.isBefore(nextRun)) {
+                nextRun = nextRun.plusWeeks(1);
+            }
+
             String whenStr = dateFormatter.format(nextRun.toInstant());
             String raw = config.msgRaw("next-run");
             if (raw == null || raw.isEmpty()) {
                 return "§7Next selection in §f" + getNextRun() + " §7(on §f" + whenStr + "§7)";
             }
             return raw
-                    .replace("{time_left}", getNextRun().trim())
+                    .replace("{time_left}", getNextRun())
                     .replace("{datetime}", whenStr);
         } catch (Exception e) {
-            // If config is missing something, just fail silently
             return null;
         }
     }
+
 
     private void sendTopScreen(CommandSender sender, int page) {
         if (!economy.isReady()) {
@@ -298,8 +324,13 @@ public class RichManCommand implements CommandExecutor, TabCompleter {
             if ("top".startsWith(typed)) {
                 suggestions.add("top");
             }
-            if (sender.hasPermission("richman.admin") && "forcerun".startsWith(typed)) {
-                suggestions.add("forcerun");
+            if (sender.hasPermission("richman.admin")) {
+                if ("forcerun".startsWith(typed)) {
+                    suggestions.add("forcerun");
+                }
+                if ("reload".startsWith(typed)) {
+                    suggestions.add("reload");
+                }
             }
             return suggestions;
         }

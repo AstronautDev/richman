@@ -1,8 +1,9 @@
 challenge:
   enabled: true
-  period: weekly      # (we'll hook this later; for now it's just config)
+  period: weekly      # what period?
   run-day: MONDAY     # day-of-week for auto run
-  run-hour: 18         # 0–23, server time
+  run-time: "18:55" # 0–23, 24 hour time, based on your server host location
+  # run-hour: 18         # legacy - only use if errors
 
   broadcast-msg: true # send broadcast when a new rich man is chosen
   broadcast-on-join: true # broadcast the current rich man to new players
@@ -32,3 +33,19 @@ messages:
   top-empty: "&7No players have any balance yet."
 
   economy-not-ready: "&cEconomy is not ready. Please contact an admin."
+
+countdown:
+  enabled: true
+  hourly:
+    start-hours-before: 6
+    message: "&7A new &6&lRich Man &r&fwill be drawn &etoday&f! Get your &amoney &fup."
+  hour-before:
+    message: "&6&lRich Man &r&eevent in &61 hour&f! &aSell &fyour stuff now!"
+  minute-5:
+    message: "&6&lRich Man &r&eevent in &65 minutes&f!"
+  minute-1:
+    message: "&6&lRich Man &r&eevent in &61 minute&f!"
+  second-30:
+    message: "&6&lRich Man &r&eevent in &630 seconds&f! Make sure you remember to &asell&f!"
+  final-10:
+    message: "&6&lRich Man &r&ein &6&l%seconds%s&r&f...!"

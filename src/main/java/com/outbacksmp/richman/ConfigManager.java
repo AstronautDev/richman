@@ -1,8 +1,8 @@
 package com.outbacksmp.richman;
 
 import java.time.DayOfWeek;
-import java.util.Locale;
 import java.util.List;
+import java.util.Locale;
 
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -11,57 +11,74 @@ import net.md_5.bungee.api.ChatColor;
 public class ConfigManager {
 
     private final RichManPlugin plugin;
-    private final FileConfiguration config;
 
     public ConfigManager(RichManPlugin plugin) {
         this.plugin = plugin;
         plugin.saveDefaultConfig();
-        this.config = plugin.getConfig();
+    }
+
+    private FileConfiguration cfg() {
+        return plugin.getConfig();
+    }
+
+    // Optional, just a helper if you ever want to call it from outside
+    public void reload() {
+        plugin.reloadConfig();
     }
 
     public boolean isChallengeEnabled() {
-        return config.getBoolean("challenge.enabled", true);
+        return cfg().getBoolean("challenge.enabled", true);
     }
 
     public boolean isBroadcastEnabled() {
-        return config.getBoolean("challenge.broadcast-msg", true);
+        return cfg().getBoolean("challenge.broadcast-msg", true);
     }
 
     public boolean isBroadcastOnJoinEnabled() {
-        return config.getBoolean("challenge.broadcast-on-join", true);
+        return cfg().getBoolean("challenge.broadcast-on-join", true);
     }
 
     public DayOfWeek getRunDay() {
-        String raw = config.getString("challenge.run-day", "MONDAY");
+        String raw = cfg().getString("challenge.run-day", "MONDAY");
         return DayOfWeek.valueOf(raw.toUpperCase(Locale.ROOT));
     }
 
     public int getRunHour() {
-        return config.getInt("challenge.run-hour", 0);
+        return cfg().getInt("challenge.run-hour", 0);
+    }
+
+    // if you added run-time as HH:mm:
+    public java.time.LocalTime getRunTime() {
+        String raw = cfg().getString("challenge.run-time", "18:00");
+        return java.time.LocalTime.parse(raw); // 24h format
+    }
+
+    public java.time.ZoneId getScheduleZone() {
+        String id = cfg().getString("challenge.time-zone", java.time.ZoneId.systemDefault().getId());
+        return java.time.ZoneId.of(id);
     }
 
     public List<String> getRewardCommands() {
-        return config.getStringList("challenge.reward-commands");
+        return cfg().getStringList("challenge.reward-commands");
     }
 
     private String getPrefix() {
-        String raw = config.getString("messages.prefix", "");
+        String raw = cfg().getString("messages.prefix", "");
         return ChatColor.translateAlternateColorCodes('&', raw);
     }
 
     public String msg(String key) {
-        String raw = config.getString("messages." + key, "");
+        String raw = cfg().getString("messages." + key, "");
         return ChatColor.translateAlternateColorCodes('&', getPrefix() + raw);
     }
 
     public String msgRaw(String key) {
-        String raw = config.getString("messages." + key, "");
+        String raw = cfg().getString("messages." + key, "");
         return ChatColor.translateAlternateColorCodes('&', raw);
     }
 
     public String getBroadcastTemplate() {
-        String raw = config.getString("messages.broadcast", "");
+        String raw = cfg().getString("messages.broadcast", "");
         return ChatColor.translateAlternateColorCodes('&', raw);
     }
-    
 }

@@ -9,6 +9,7 @@ import org.bukkit.OfflinePlayer;
 
 import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Optional;
@@ -78,18 +79,27 @@ public class APIImpl implements RichManAPI {
 
     @Override
     public Instant getNextSelectionTime() {
-        DayOfWeek runDay = config.getRunDay();
-        int runHour = config.getRunHour();
-
         ZonedDateTime now = ZonedDateTime.now();
-        ZonedDateTime nextRun = now.with(TemporalAdjusters.nextOrSame(runDay)).withHour(runHour).withMinute(0).withSecond(0).withNano(0);
 
-        if(!now.isBefore(nextRun)) {
+        DayOfWeek runDay = config.getRunDay();      // e.g. FRIDAY
+        LocalTime runTime = config.getRunTime();    // e.g. 18:57 from config
+
+        // First candidate: this week on the configured day + time
+        ZonedDateTime nextRun = now
+                .with(TemporalAdjusters.nextOrSame(runDay))
+                .withHour(runTime.getHour())
+                .withMinute(runTime.getMinute())
+                .withSecond(0)
+                .withNano(0);
+
+        // If that candidate is now or in the past, bump it to next week
+        if (!nextRun.isAfter(now)) {
             nextRun = nextRun.plusWeeks(1);
         }
 
         return nextRun.toInstant();
     }
+
 
     @Override
     public Optional<WinnerRecord> getLastWinner() {

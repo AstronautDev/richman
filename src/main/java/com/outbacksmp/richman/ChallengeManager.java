@@ -1,12 +1,11 @@
 package com.outbacksmp.richman;
 
-import java.time.DayOfWeek;
-import java.time.Instant;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Optional;
 
+import com.outbacksmp.richman.api.RichManAPI;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -42,16 +41,28 @@ public class ChallengeManager {
 
     private boolean shouldRunNow() {
         Instant lastRun = dataStore.getLastRun();
-        ZonedDateTime now = ZonedDateTime.now();
-        if(lastRun == null) return true;
 
-        DayOfWeek runDay = config.getRunDay();
-        int runHour = config.getRunHour();
+        DayOfWeek runDay = config.getRunDay();   // e.g. FRIDAY
+        LocalTime runTime = config.getRunTime(); // e.g. 18:15 from challenge.run-time
+        ZoneId zone = config.getScheduleZone();  // or ZoneId.systemDefault()
 
-        ZonedDateTime thisRun = now.with(TemporalAdjusters.previousOrSame(runDay))
-        .withHour(runHour).withMinute(0).withSecond(0).withNano(0);
+        ZonedDateTime now = ZonedDateTime.now(zone);
 
-        return (now.isAfter(thisRun) || now.isEqual(thisRun)) && lastRun.isBefore(thisRun.toInstant());
+        // "This week's scheduled run" in the same zone
+        ZonedDateTime thisRun = now
+                .with(TemporalAdjusters.previousOrSame(runDay))
+                .withHour(runTime.getHour())
+                .withMinute(runTime.getMinute())
+                .withSecond(0)
+                .withNano(0);
+
+        // If we've never run before: allow run once we've passed the scheduled time
+        if (lastRun == null) {
+            return !now.isBefore(thisRun); // now >= thisRun
+        }
+
+        // Otherwise: run if we're at/after thisRun and we haven't run this slot yet
+        return !now.isBefore(thisRun) && lastRun.isBefore(thisRun.toInstant());
     }
 
     public void runNow(CommandSender sender) {
